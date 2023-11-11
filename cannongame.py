@@ -35,6 +35,8 @@ _DIFFICULTY_BULLET_SPEED = 30
 _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS = 10
 _DIFFICULTY_RELOAD_TIME_BULLET = 20
 
+_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 15
+
 _ROUND_TIME_S = 60
 _EXPECTED_FPS = 60
 _TIME_PER_CYCLE = 1/_EXPECTED_FPS
@@ -203,6 +205,7 @@ class GameInstance:
         info = {}
 
         quited = False
+        trimmed = False
 
         if(self.Running):
             # poll for events
@@ -288,18 +291,26 @@ class GameInstance:
             self.ElapsedTime +=_TIME_PER_CYCLE
 
             #End game when time is over
-            self.Running &= (self.ElapsedTime < _ROUND_TIME_S)
+            if(self.ElapsedTime >= _ROUND_TIME_S):
+                self.Running =False
+                trimmed = True
         
-        done = not self.Running
+        if(self.DestroyedAircrafts >= _DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS):
+            self.Running = False
 
+        done = not self.Running
+         
         info['DestroyedAircrafts'] = self.DestroyedAircrafts
         info['MissedAircrafts'] = self.MissedAircrafts
         info['MissedBullets'] = self.MissedBullets
 
+        
+
         if(quited):
+            trimmed = True
             self.close()
                 
-        return self.OutputObs, done, info
+        return self.OutputObs, done, trimmed, info
 
     def render(self):
         if(self.Running):
