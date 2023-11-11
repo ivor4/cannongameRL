@@ -76,8 +76,9 @@ class GameInstance:
             self.AircraftHeightUsed = []
             self.AircraftHeightsUsed = 0
             self.ElapsedTime = 0.0
-            self.OutputObs = [[[0]]*_OUTPUT_NP_X_LENGHT]*(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10)
+            self.OutputObs = [[[0]]*(_OUTPUT_NP_X_LENGHT)]*(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10)
             self.OutputObs = np.array(self.OutputObs)
+
 
             for i in range(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS):
                 self.AircraftHeightUsed.append(False)
@@ -207,7 +208,7 @@ class GameInstance:
         quited = False
         trimmed = False
 
-        if(self.Running):
+        if(self.Running and (self.Mode == GAME_MODE_NORMAL)):
             # poll for events
             # pygame.QUIT event means the user clicked X to close your window    
             for event in pygame.event.get():
@@ -229,6 +230,9 @@ class GameInstance:
                 
             if(inputAction == ACTION_SHOOT):
                 self._Shoot()
+
+            #Clear virtual output
+            self.OutputObs.fill(0)
                 
             for gObject in self.GameObjects:
                 if(gObject.killed != _KILLED_NOT):
@@ -255,37 +259,31 @@ class GameInstance:
                         self.ExplosionPool.append(gObject)
                 else:
                     gObject.Update()
-        
-            #Clear virtual output
-            for h in range(0,_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10):
-                for x in range(0, _OUTPUT_NP_X_LENGHT):
-                    self.OutputObs[h][x][0] = 0
 
-            #Set to 1.0 virutal "pixels" used by aircrafts
-            for aircraft in self.ActiveAircrafts:
-                virtualwidth = int(aircraft.shapeSize.x /_OUTPUT_SIZE_FACTOR)
-                virtualpos = int(aircraft.position.x / _OUTPUT_SIZE_FACTOR)
-                for w in range(0, virtualwidth):
-                    xaxis = virtualpos - virtualwidth//2 + w
-                    xaxis = min(xaxis, _OUTPUT_NP_X_LENGHT-1)
-                    xaxis = max(xaxis, 0)
-                    for h in range(0,10):
-                        self.OutputObs[aircraft.height*10 + h][xaxis][0] = 255
-                    
-                for bullet in self.ActiveBullets:
-                    if(aircraft.rect.colliderect(bullet.rect)):
-                        aircraft.Kill(_KILLED_BINGO)
-                        bullet.setWasUseful()
+                    if(gObject.objType == _OBJ_TYPE_AIRCRAFT):
+                        for bullet in self.ActiveBullets:
+                            if(gObject.rect.colliderect(bullet.rect)):
+                                gObject.Kill(_KILLED_BINGO)
+                                bullet.setWasUseful()
         
-                        if(len(self.ExplosionPool) > 0):
-                            newExplosion = self.ExplosionPool.pop(0)
-                            newExplosion.ReCreate(aircraft.position)
-                            self.GameObjects.append(newExplosion)
-                        else:
-                            print('Critical Error, explosion pool exhausted')
-                            self.Running = False
+                                if(len(self.ExplosionPool) > 0):
+                                    newExplosion = self.ExplosionPool.pop(0)
+                                    newExplosion.ReCreate(gObject.position)
+                                    self.GameObjects.append(newExplosion)
+                                else:
+                                    print('Critical Error, explosion pool exhausted')
+                                    self.Running = False
                                     
-                        break
+                                break
+                        if(gObject.killed == _KILLED_NOT):
+                            virtualwidth = int(gObject.shapeSize.x /_OUTPUT_SIZE_FACTOR)
+                            virtualpos = int(gObject.position.x / _OUTPUT_SIZE_FACTOR)
+                            
+                            virtualmin = max(0,virtualpos - virtualwidth//2)
+                            virtualmax = min(_OUTPUT_NP_X_LENGHT-1, virtualpos + virtualwidth//2) + 1
+
+                            self.OutputObs[gObject.height*10:gObject.height*10+9,virtualmin:virtualmax,0] = 255
+        
             
 
             self.ElapsedTime +=_TIME_PER_CYCLE
