@@ -1,5 +1,6 @@
 import pygame
 import random
+import numpy as np
 
 
 GAME_MODE_NORMAL = 0
@@ -30,7 +31,7 @@ _KILLED_BINGO = 2
 _KILLED_NEUTRAL = 3
 
 _DIFFICULTY_AIRCRAFT_WIDTH = 48
-_DIFFICULTY_BULLET_SPEED = 10
+_DIFFICULTY_BULLET_SPEED = 30
 _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS = 10
 _DIFFICULTY_RELOAD_TIME_BULLET = 20
 
@@ -38,6 +39,11 @@ _ROUND_TIME_S = 60
 _EXPECTED_FPS = 60
 _TIME_PER_CYCLE = 1/_EXPECTED_FPS
 _ROUND_CYCLES = _ROUND_TIME_S * _EXPECTED_FPS
+
+_SCREEN_SIZE = [1280, 720]
+_OUTPUT_SIZE_FACTOR = 8
+
+_OUTPUT_NP_X_LENGHT = _SCREEN_SIZE[0] // _OUTPUT_SIZE_FACTOR
 
 
 class GameInstance:
@@ -48,7 +54,7 @@ class GameInstance:
         if(not pygame.get_init()):
             pygame.init()
             pygame.display.set_caption(self.Caption)
-            self.Screen = pygame.display.set_mode((1280, 720))
+            self.Screen = pygame.display.set_mode((_SCREEN_SIZE[0], _SCREEN_SIZE[1]))
             self.Clock = pygame.time.Clock()
             self.Font = pygame.font.SysFont(None, 24)
             self.OK = True
@@ -68,15 +74,11 @@ class GameInstance:
             self.AircraftHeightUsed = []
             self.AircraftHeightsUsed = 0
             self.ElapsedTime = 0.0
-            self.OutputObs = []
+            self.OutputObs = [[[0]]*_OUTPUT_NP_X_LENGHT]*(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10)
+            self.OutputObs = np.array(self.OutputObs)
 
             for i in range(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS):
                 self.AircraftHeightUsed.append(False)
-                tupla = []
-                tupla.append(0)
-                tupla.append(0.0)
-                tupla.append(0.0)
-                self.OutputObs.append(tupla)
 
             for i in range(64):
                 self.AircraftPool.append(_Aircraft())
@@ -90,7 +92,7 @@ class GameInstance:
             self.Score = 0
             self.DownKeys = 0x0
 
-            self.AircraftTimeout = random.randint(60, 180)
+            self.AircraftTimeout = random.randint(30, 150)
             self.ReloadTimeout = 0
             self.BulletReady = True
         
@@ -171,7 +173,6 @@ class GameInstance:
 
                 self.AircraftHeightsUsed += 1
                 self.AircraftHeightUsed[randHeight] = True
-                self.OutputObs[randHeight][0] = 1
 
 
                 
@@ -238,9 +239,6 @@ class GameInstance:
                             self.Score += 100
                         self.AircraftHeightsUsed -= 1
                         self.AircraftHeightUsed[gObject.height] = False
-                        self.OutputObs[gObject.height][0] = 0
-                        self.OutputObs[gObject.height][1] = 0.0
-                        self.OutputObs[gObject.height][2] = 0.0
                         self.AircraftPool.append(gObject)
                         self.ActiveAircrafts.remove(gObject)
                             
@@ -255,10 +253,21 @@ class GameInstance:
                 else:
                     gObject.Update()
         
+            #Clear virtual output
+            for h in range(0,_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10):
+                for x in range(0, _OUTPUT_NP_X_LENGHT):
+                    self.OutputObs[h][x][0] = 0
+
+            #Set to 1.0 virutal "pixels" used by aircrafts
             for aircraft in self.ActiveAircrafts:
-                self.OutputObs[aircraft.height][0] = 1
-                self.OutputObs[aircraft.height][1] = aircraft.position.x / self.Screen.get_width()
-                self.OutputObs[aircraft.height][2] = (aircraft.speed.x + 5.0) / 10.0
+                virtualwidth = int(aircraft.shapeSize.x /_OUTPUT_SIZE_FACTOR)
+                virtualpos = int(aircraft.position.x / _OUTPUT_SIZE_FACTOR)
+                for w in range(0, virtualwidth):
+                    xaxis = virtualpos - virtualwidth//2 + w
+                    xaxis = min(xaxis, _OUTPUT_NP_X_LENGHT-1)
+                    xaxis = max(xaxis, 0)
+                    for h in range(0,10):
+                        self.OutputObs[aircraft.height*10 + h][xaxis][0] = 255
                     
                 for bullet in self.ActiveBullets:
                     if(aircraft.rect.colliderect(bullet.rect)):
