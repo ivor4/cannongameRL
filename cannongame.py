@@ -49,9 +49,10 @@ _OUTPUT_NP_X_LENGHT = _SCREEN_SIZE[0] // _OUTPUT_SIZE_FACTOR
 
 
 class GameInstance:
-    def __init__(self, caption, mode):
+    def __init__(self, caption, mode, render_mode):
         self.Caption = caption
         self.Mode = mode
+        self.render_mode = render_mode
 
         if(not pygame.get_init()):
             pygame.init()
@@ -208,7 +209,7 @@ class GameInstance:
         quited = False
         trimmed = False
 
-        if(self.Running and (self.Mode == GAME_MODE_NORMAL)):
+        if(self.Running and (self.render_mode == 'human')):
             # poll for events
             # pygame.QUIT event means the user clicked X to close your window    
             for event in pygame.event.get():
