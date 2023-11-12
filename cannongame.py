@@ -35,9 +35,9 @@ _DIFFICULTY_BULLET_SPEED = 30
 _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS = 10
 _DIFFICULTY_RELOAD_TIME_BULLET = 20
 
-_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 5
+_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 30
 
-_ROUND_TIME_S = 30
+_ROUND_TIME_S = 120
 _EXPECTED_FPS = 60
 _TIME_PER_CYCLE = 1/_EXPECTED_FPS
 _ROUND_CYCLES = _ROUND_TIME_S * _EXPECTED_FPS
@@ -306,9 +306,10 @@ class GameInstance:
                 self.Running =False
                 trimmed = True
         
+        #Game is truncated if losbullets >= Target total aircrafts/3. Otherwise is ended
         if(self.DestroyedAircrafts >= _DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS):
             self.Running = False
-            if(self.MissedBullets >= 2):
+            if(self.MissedBullets >= (_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS//3)):
                 trimmed = True
 
         done = not self.Running and not trimmed
