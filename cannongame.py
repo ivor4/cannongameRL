@@ -37,7 +37,7 @@ _DIFFICULTY_RELOAD_TIME_BULLET = 20
 
 _DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 5
 
-_ROUND_TIME_S = 120
+_ROUND_TIME_S = 30
 _EXPECTED_FPS = 60
 _TIME_PER_CYCLE = 1/_EXPECTED_FPS
 _ROUND_CYCLES = _ROUND_TIME_S * _EXPECTED_FPS
@@ -305,8 +305,10 @@ class GameInstance:
         
         if(self.DestroyedAircrafts >= _DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS):
             self.Running = False
+            if(self.MissedBullets >= 2):
+                trimmed = True
 
-        done = not self.Running
+        done = not self.Running and not trimmed
          
         info['DestroyedAircrafts'] = self.DestroyedAircrafts
         info['MissedAircrafts'] = self.MissedAircrafts
