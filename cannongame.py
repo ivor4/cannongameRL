@@ -46,13 +46,15 @@ _SCREEN_SIZE = [1280, 720]
 _OUTPUT_SIZE_FACTOR = 8
 
 #Xmin,XMax - X axis Region of interest of screen in pixels
-_REGION_OF_INTEREST = [512,768]
+_REGION_OF_INTEREST = [384,896]
 
 #Output in X will be reduced according to factor
 _OUTPUT_NP_X_LENGHT = (_REGION_OF_INTEREST[1] - _REGION_OF_INTEREST[0]) // _OUTPUT_SIZE_FACTOR
 
 #Mlp will be used and not an image, Y axis is = number of aircraft lanes
 _OUTPUT_NP_Y_LENGTH = _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS
+
+_OUTPUT_TRAIL_LOSS_RATIO = 3.0/5.0;
 
 
 class GameInstance:
@@ -242,7 +244,8 @@ class GameInstance:
                 self._Shoot()
 
             #Clear virtual output
-            self.OutputObs.fill(0.0)
+            #self.OutputObs.fill(0.0)
+            self.OutputObs = self.OutputObs * _OUTPUT_TRAIL_LOSS_RATIO
                 
             for gObject in self.GameObjects:
                 if(gObject.killed != _KILLED_NOT):
