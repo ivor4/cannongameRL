@@ -35,17 +35,24 @@ _DIFFICULTY_BULLET_SPEED = 30
 _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS = 10
 _DIFFICULTY_RELOAD_TIME_BULLET = 20
 
-_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 15
+_DIFFICULTY_TOTAL_DESTROYED_AIRCRAFTS = 100
 
-_ROUND_TIME_S = 60
+_ROUND_TIME_S = 120
 _EXPECTED_FPS = 60
 _TIME_PER_CYCLE = 1/_EXPECTED_FPS
 _ROUND_CYCLES = _ROUND_TIME_S * _EXPECTED_FPS
 
 _SCREEN_SIZE = [1280, 720]
-_OUTPUT_SIZE_FACTOR = 8
+_OUTPUT_SIZE_FACTOR = 4
 
-_OUTPUT_NP_X_LENGHT = _SCREEN_SIZE[0] // _OUTPUT_SIZE_FACTOR
+#Xmin,XMax - X axis Region of interest of screen in pixels
+_REGION_OF_INTEREST = [512,768]
+
+#Output in X will be reduced according to factor
+_OUTPUT_NP_X_LENGHT = (_REGION_OF_INTEREST[1] - _REGION_OF_INTEREST[0]) // _OUTPUT_SIZE_FACTOR
+
+#Y axis is totally virtual and is set to 60 to be similar to X axis which is by default 64 with actual configuration and region of interest
+_OUTPUT_NP_Y_LENGTH = 60
 
 
 class GameInstance:
@@ -67,27 +74,29 @@ class GameInstance:
 
 
     def reset(self, seed = 0):
+
+        random.seed(seed)
+
         if(self.OK):
             self.GameObjects = []
+
+            #Objects are pooled to avoid new memory alloc during run, this avoids creating new instances after this point
             self.AircraftPool = []
             self.BulletPool = []
             self.ExplosionPool = []
-            self.ActiveAircrafts = []
-            self.ActiveBullets = []
-            self.AircraftHeightUsed = []
-            self.AircraftHeightsUsed = 0
-            self.ElapsedTime = 0.0
-            self.OutputObs = [[[0]]*(_OUTPUT_NP_X_LENGHT)]*(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS*10)
-            self.OutputObs = np.array(self.OutputObs)
-
-
-            for i in range(_DIFFICULTY_AIRCRAFT_LINE_HEIGHTS):
-                self.AircraftHeightUsed.append(False)
 
             for i in range(64):
                 self.AircraftPool.append(_Aircraft())
                 self.BulletPool.append(_Bullet())
                 self.ExplosionPool.append(_Explosion())
+
+            self.ActiveAircrafts = []
+            self.ActiveBullets = []
+            self.AircraftHeightUsed = [False] * _DIFFICULTY_AIRCRAFT_LINE_HEIGHTS
+            self.AircraftHeightsUsed = 0
+            self.ElapsedTime = 0.0
+            self.OutputObs = np.zeros((_OUTPUT_NP_Y_LENGTH, _OUTPUT_NP_X_LENGHT, 1))
+
             
             self.Running = True
             self.DestroyedAircrafts = 0
@@ -276,14 +285,14 @@ class GameInstance:
                                     self.Running = False
                                     
                                 break
-                        if(gObject.killed == _KILLED_NOT):
+                        if((gObject.killed == _KILLED_NOT)and(gObject.position.x > _REGION_OF_INTEREST[0])and(gObject.position.x < _REGION_OF_INTEREST[1])):
                             virtualwidth = int(gObject.shapeSize.x /_OUTPUT_SIZE_FACTOR)
-                            virtualpos = int(gObject.position.x / _OUTPUT_SIZE_FACTOR)
+                            virtualpos = int((gObject.position.x - _REGION_OF_INTEREST[0]) / _OUTPUT_SIZE_FACTOR)
                             
                             virtualmin = max(0,virtualpos - virtualwidth//2)
                             virtualmax = min(_OUTPUT_NP_X_LENGHT-1, virtualpos + virtualwidth//2) + 1
 
-                            self.OutputObs[gObject.height*10:gObject.height*10+9,virtualmin:virtualmax,0] = 255
+                            self.OutputObs[gObject.height*6:gObject.height*6+5,virtualmin:virtualmax,0] = 255
         
             
 
